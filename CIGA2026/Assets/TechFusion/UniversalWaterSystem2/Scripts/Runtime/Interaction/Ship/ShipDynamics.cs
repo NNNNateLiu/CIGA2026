@@ -29,7 +29,7 @@ namespace UniversalWaterSystem
 
         public void SetImpetus(float verticalImpetus, float horizontalImpetus)
         {
-            this.verticalImpetus = Mathf.Clamp(verticalImpetus, -1, 1);
+            this.verticalImpetus = 1;
             this.horizontalImpetus = Mathf.Clamp(horizontalImpetus, -1, 1);
         }
 
