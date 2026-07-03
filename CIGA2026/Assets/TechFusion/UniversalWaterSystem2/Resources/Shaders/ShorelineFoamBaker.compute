@@ -1,0 +1,29 @@
+#pragma kernel BakeData
+
+uint ValidDataCount;
+uint GroupSizeX;
+
+struct ShorelinePointData
+{
+    float3 position;
+    float2 fadeParams;//x:front fade y:time pos
+};
+
+StructuredBuffer<ShorelinePointData> DataBuffer;
+
+RWTexture2D<float4> DataMap;
+
+[numthreads(8, 8, 1)]
+void BakeData(uint2 id : SV_DispatchThreadID)
+{
+    uint localX = id.x;
+    uint localY = id.y;
+    
+    uint globalIndex = localX + (localY * GroupSizeX);
+    
+    uint i = globalIndex % ValidDataCount;
+
+    float3 position = DataBuffer[i].position;
+
+    DataMap[uint2(i % GroupSizeX, i / GroupSizeX)] = float4(position, DataBuffer[i].fadeParams.x * DataBuffer[i].fadeParams.y);
+}

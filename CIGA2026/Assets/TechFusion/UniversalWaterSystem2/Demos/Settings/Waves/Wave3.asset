@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5cd563ee67731e44a9fc32f830a55c08, type: 3}
+  m_Name: Wave3
+  m_EditorClassIdentifier: 
+  g: 30
+  depth: 1000
+  lambda: 2
+  local:
+    scale: 0.021
+    windScale: 5.9
+    windDirection: 97
+    tileStrength: 6000
+    spread: 0
+    swell: 1
+    peak: 5
+    waveLengthFilter: 0
+  swell:
+    scale: 0.009
+    windScale: 13.7
+    windDirection: 97
+    tileStrength: 2000000
+    spread: 0.614
+    swell: 1
+    peak: 2.79
+    waveLengthFilter: 0.45
