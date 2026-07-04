@@ -17,6 +17,8 @@ namespace UniversalWaterSystem
         [SerializeField] private float seabedDepth = 15f;         // 海底深度（水面以下）
         [SerializeField] private float chainTensionForce = 8000f; // 链条张紧时对船施加的力
         [SerializeField] private float chainDamping = 1.2f;       // 链条收紧时的速度阻尼
+        [SerializeField] private float anchorDragSteerStrength = 1.0f; // 锚曳力转向强度（系数）
+        [SerializeField] private float anchorBaseDragForce = 2000f;    // 锚落底后的基础摩擦拖拽力
 
         [Header("下锚/起锚速度")]
         [SerializeField] private float dropSpeed = 4f;   // 锚下沉速度（m/s）
@@ -29,6 +31,7 @@ namespace UniversalWaterSystem
         [Header("出链点（船舷位置）")]
         [SerializeField] private Transform leftChainExitPoint;
         [SerializeField] private Transform rightChainExitPoint;
+        [SerializeField] private float anchorSeabedOffect;
 
         [Header("按键")]
         [SerializeField] private KeyCode dropLeftKey  = KeyCode.Q;
@@ -77,8 +80,8 @@ namespace UniversalWaterSystem
         {
             if (State == AnchorState.Idle)
             {
-                if (Input.GetKeyDown(dropLeftKey))  BeginDrop(leftChainExitPoint);
-                if (Input.GetKeyDown(dropRightKey)) BeginDrop(rightChainExitPoint);
+                if (Input.GetKeyDown(dropLeftKey))  BeginDrop(leftChainExitPoint,true);
+                if (Input.GetKeyDown(dropRightKey)) BeginDrop(rightChainExitPoint,false);
             }
             else if (State == AnchorState.Anchored || State == AnchorState.Dropping)
             {
@@ -87,13 +90,23 @@ namespace UniversalWaterSystem
         }
 
         // ── 下锚 ──────────────────────────────────────────────────────────────
-        void BeginDrop(Transform exitPoint)
+        void BeginDrop(Transform exitPoint, bool isDroppingLeftAnchor)
         {
+            float currentSeabedOffset = 0;
+            
             activeExit = exitPoint != null ? exitPoint : transform;
             anchorPos  = activeExit.position;
 
             float seabedY = GetSeabedY(anchorPos);
-            seabedPos = new Vector3(anchorPos.x, seabedY, anchorPos.z);
+            if (isDroppingLeftAnchor)
+            {
+                currentSeabedOffset = -anchorSeabedOffect;
+            }
+            else
+            {
+                currentSeabedOffset = anchorSeabedOffect;
+            }
+            seabedPos = new Vector3(anchorPos.x + currentSeabedOffset, seabedY, anchorPos.z);
 
             paidChain = 0f;
             State     = AnchorState.Dropping;
@@ -123,7 +136,8 @@ namespace UniversalWaterSystem
                     {
                         anchorPos = seabedPos;
                         State     = AnchorState.Anchored;
-                        if (shipDynamics != null) shipDynamics.SetImpetus(0f, 0f);
+                        // 为了感受“拖曳转向”效果，我们不再强制归零动力，或者你可以手动在编辑器中控制
+                        // if (shipDynamics != null) shipDynamics.SetImpetus(0f, 0f);
                     }
                     break;
                 }
@@ -136,12 +150,19 @@ namespace UniversalWaterSystem
 
                     if (Vector3.Distance(anchorPos, target) < 0.3f)
                     {
-                        State = AnchorState.Idle;
+                        State = AnchorState.Idle; // This stops ApplyChainForce() completely
                         if (chainRenderer != null) chainRenderer.enabled = false;
-                        if (shipDynamics != null) shipDynamics.SetImpetus(1f, 0f);
+        
+                        // Restore forward movement
+                        if (shipDynamics != null) 
+                        {
+                            // Set vertical impetus to 1 (Forward) and clear any steering (0)
+                            shipDynamics.SetImpetus(1f, 0f); 
+                        }
                     }
                     break;
                 }
+
             }
         }
 
@@ -152,6 +173,15 @@ namespace UniversalWaterSystem
 
             Vector3 exitPos = activeExit.position;
 
+            // 1. 基础摩擦力：模拟锚在海底拖行的阻力
+            Vector3 worldVel = rb.GetPointVelocity(exitPos);
+            Vector3 dragDir = -new Vector3(worldVel.x, 0, worldVel.z).normalized;
+            if (worldVel.magnitude > 0.1f)
+            {
+                rb.AddForceAtPosition(dragDir * anchorBaseDragForce, exitPos, ForceMode.Force);
+            }
+
+            // 2. 链条张紧力
             float effectiveLen = Mathf.Min(paidChain + 1.5f, maxChainLength);
 
             Vector3 toAnchorFlat = new Vector3(
@@ -166,12 +196,13 @@ namespace UniversalWaterSystem
             Vector3 pullDir  = toAnchorFlat.normalized;
             float   forceMag = chainTensionForce * excess;
 
-            rb.AddForce(pullDir * forceMag, ForceMode.Force);
+            // 使用 AddForceAtPosition 在出链点施加力，自然产生转向力矩
+            rb.AddForceAtPosition(pullDir * forceMag * anchorDragSteerStrength, exitPos, ForceMode.Force);
 
             // 阻尼：消除沿链条方向的速度分量，模拟链条拉紧瞬间的顿挫感
-            float velAlongChain = Vector3.Dot(rb.velocity, pullDir);
+            float velAlongChain = Vector3.Dot(rb.GetRelativePointVelocity(activeExit.localPosition), pullDir);
             if (velAlongChain > 0f)
-                rb.AddForce(-pullDir * velAlongChain * chainDamping * rb.mass, ForceMode.Impulse);
+                rb.AddForceAtPosition(-pullDir * velAlongChain * chainDamping * rb.mass, exitPos, ForceMode.Impulse);
         }
 
         // ── 悬链线视觉（二次贝塞尔 + 垂度）─────────────────────────────────

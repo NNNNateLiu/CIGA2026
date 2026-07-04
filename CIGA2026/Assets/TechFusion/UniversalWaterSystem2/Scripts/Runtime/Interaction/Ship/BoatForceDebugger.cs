@@ -15,6 +15,8 @@ namespace UniversalWaterSystem
         public float forceScale = 0.01f; // 力的缩放比例，如果力很大，箭头会极长，需要缩放
         public float velocityScale = 1.0f;
 
+        public Transform drawTransform;
+
         void Start()
         {
             rb = GetComponent<Rigidbody>();
@@ -35,16 +37,16 @@ namespace UniversalWaterSystem
 
             // 1. 绘制施加的局部力 (绿色)
             Gizmos.color = Color.green;
-            Vector3 forceVisualEnd = transform.position + (lastAppliedWorldForce * forceScale);
-            Gizmos.DrawLine(transform.position, forceVisualEnd);
-            DrawArrowTip(transform.position, forceVisualEnd, Color.green);
+            Vector3 forceVisualEnd = drawTransform.position + (lastAppliedWorldForce * forceScale);
+            Gizmos.DrawLine(drawTransform.position, forceVisualEnd);
+            DrawArrowTip(drawTransform.position, forceVisualEnd, Color.green);
 
             // 2. 绘制当前船体的实际速度 (红色)
             Gizmos.color = Color.red;
             Vector3 velocityVisualEnd =
-                transform.position + (rb.velocity * velocityScale); // Unity 2026 推荐使用 linearVelocity，旧版本用 velocity
-            Gizmos.DrawLine(transform.position, velocityVisualEnd);
-            DrawArrowTip(transform.position, velocityVisualEnd, Color.red);
+                drawTransform.position + (rb.velocity * velocityScale); // Unity 2026 推荐使用 linearVelocity，旧版本用 velocity
+            Gizmos.DrawLine(drawTransform.position, velocityVisualEnd);
+            DrawArrowTip(drawTransform.position, velocityVisualEnd, Color.red);
         }
 
         // 辅助方法：绘制箭头挂饰
