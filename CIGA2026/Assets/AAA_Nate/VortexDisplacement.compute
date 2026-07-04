@@ -1,0 +1,61 @@
+// 漩涡位移 ComputeShader
+// 生成一张 RenderTexture（RGBA Half），RGBA = (dx, dy, dz, foam)
+// dy 是向下凹陷，dx/dz 是切向旋转扰动
+// 由 WaterVortex.cs 每帧调度，然后叠加写入 Water_DynamicDisplacement
+
+#pragma kernel CSVortex
+
+RWTexture2DArray<float4> _VortexOut;   // 目标 Tex2DArray（slice 0）
+int   _Resolution;                     // 纹理分辨率
+float _Time;
+float _CenterX;                        // 世界坐标漩涡中心 X
+float _CenterZ;                        // 世界坐标漩涡中心 Z
+float _OuterRadius;
+float _InnerRadius;
+float _Depth;                          // 最大下压深度（dy 负值）
+float _Clockwise;                      // 1=顺时针, -1=逆时针
+float _RotAngle;                       // 当前累计旋转角（弧度）
+float _CellSize;                       // 每个像素对应世界尺寸（米）
+float _TexelOffsetX;                   // 纹理中心对应世界坐标 X
+float _TexelOffsetZ;                   // 纹理中心对应世界坐标 Z
+
+[numthreads(8, 8, 1)]
+void CSVortex(uint3 id : SV_DispatchThreadID)
+{
+    if ((int)id.x >= _Resolution || (int)id.y >= _Resolution) return;
+
+    // 像素 → 世界坐标
+    float worldX = _TexelOffsetX + ((float)id.x / _Resolution - 0.5) * _CellSize * _Resolution;
+    float worldZ = _TexelOffsetZ + ((float)id.y / _Resolution - 0.5) * _CellSize * _Resolution;
+
+    float dx = worldX - _CenterX;
+    float dz = worldZ - _CenterZ;
+    float dist = sqrt(dx * dx + dz * dz);
+
+    // 范围外清零
+    if (dist > _OuterRadius || dist < 0.001)
+    {
+        _VortexOut[uint3(id.x, id.y, 0)] = float4(0, 0, 0, 0);
+        return;
+    }
+
+    // 归一化 0（外缘）→ 1（内缘）
+    float t = 1.0 - saturate((dist - _InnerRadius) / (_OuterRadius - _InnerRadius));
+    t = t * t * t;  // 三次曲线：中心急剧凹陷
+
+    // Y 下压位移（负数 = 向下）
+    float dispY = -_Depth * t;
+
+    // 切向扰动（产生旋转感）
+    float2 radial = float2(dx, dz) / max(dist, 0.001);
+    float2 tangent = float2(-radial.y, radial.x) * _Clockwise;
+
+    float swirlMag = _Depth * t * 0.35;          // 切向强度与深度关联
+    float dispX = tangent.x * swirlMag;
+    float dispZ = tangent.y * swirlMag;
+
+    // 泡沫：漩涡内壁附近
+    float foam = saturate(t * 1.5 - 0.3) * 0.8;
+
+    _VortexOut[uint3(id.x, id.y, 0)] = float4(dispX, dispY, dispZ, foam);
+}
