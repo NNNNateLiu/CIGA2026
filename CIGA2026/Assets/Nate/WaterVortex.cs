@@ -12,18 +12,18 @@ namespace UniversalWaterSystem
         public const int MAX_VORTEX = 4;
 
         [Header("漩涡形状")]
-        [SerializeField] private float outerRadius = 40f;
-        [SerializeField] private float innerRadius = 2f;
-        [SerializeField] private float vortexDepth = 18f;
+        [SerializeField] private float outerRadius = 150f;
+        [SerializeField] private float innerRadius = 70f;
+        [SerializeField] private float vortexDepth = 100f;
         [SerializeField] private bool  clockwise   = true;
 
         [Header("旋转")]
         [SerializeField] private float rotateSpeed = 80f;
 
         [Header("物理力")]
-        [SerializeField] private float pullForce    = 1200f;
-        [SerializeField] private float spinForce    = 800f;
-        [SerializeField] private float dragInVortex = 2f;
+        [SerializeField] private float pullForce    = 12000f;
+        [SerializeField] private float spinForce    = 8000f;
+        [SerializeField] private float dragInVortex = 10f;
 
         [Header("游戏逻辑")]
         [SerializeField] private LayerMask affectedLayers = ~0;
@@ -183,9 +183,9 @@ namespace UniversalWaterSystem
         public void SetIntensity(float t)
         {
             t           = Mathf.Clamp01(t);
-            vortexDepth = Mathf.Lerp(0f,   18f, t);
-            pullForce   = Mathf.Lerp(0f, 1200f, t);
-            spinForce   = Mathf.Lerp(0f,  800f, t);
+            vortexDepth = Mathf.Lerp(0f,    100f, t);
+            pullForce   = Mathf.Lerp(0f,  12000f, t);
+            spinForce   = Mathf.Lerp(0f,   8000f, t);
         }
 
         // ── Gizmos ────────────────────────────────────────────────────────────

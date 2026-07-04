@@ -218,13 +218,34 @@ Shader "TechFusion/UniversalWaterSystem/Ocean"
 					float2 tangentDir = float2(-radialDir.y, radialDir.x) * vAnim.z;
 
 					float funnelSlope = 2.0 * (1.0 - radialT) * depth / outer;
-					normal.xz += radialDir  * funnelSlope          * active * fade2 * 0.4;
-					normal.xz += tangentDir * cos(ridgePhase)      * ridgeEnv * 1.5 * active;
-					normal.xz += radialDir  * ridgeWave            * ridgeEnv * 0.8 * active;
+					normal.xz += radialDir  * funnelSlope     * active * fade2 * 0.4;
+					normal.xz += tangentDir * cos(ridgePhase) * ridgeEnv * 1.5 * active;
+					normal.xz += radialDir  * ridgeWave       * ridgeEnv * 0.8 * active;
 
-					coverage += smoothstep(0.72, 0.90, ridgeCombined) * ridgeEnv * active * 0.7;
-					coverage += smoothstep(0.82, 0.90, radialT)
-					          * smoothstep(0.95, 0.88, radialT) * active * fade2 * 0.25;
+					// ── 优化泡沫 ─────────────────────────────────────────────
+					// 高频噪点：沿螺旋臂让泡沫宽窄不均，打破等宽感
+					float noise = sin(baseAngle2 * 9.0 + dist * 1.8) * 0.12
+					            + sin(baseAngle2 * 5.0 - dist * 2.5 + 1.3) * 0.07;
+					float ridgeNoisy = ridgeCombined + noise;
+
+					// 阈值随半径变化：外缘阈值更高（泡沫更窄），内圈更宽（湍流感）
+					float threshLow  = lerp(0.60, 0.76, radialT);
+					float threshHigh = lerp(0.80, 0.93, radialT);
+					float crestFoam  = smoothstep(threshLow, threshHigh, ridgeNoisy)
+					                 * ridgeEnv * active * 0.75;
+
+					// 内圈湍流：仅在 radialT < 0.35，叠加低阈值噪点泡沫
+					float innerTurb = smoothstep(0.45, 0.65, ridgeNoisy)
+					                * pow(max(0.35 - radialT, 0.0) / 0.35, 1.5)
+					                * active * 0.5;
+
+					// 外缘破碎：细且淡，不形成明显圆圈
+					float edgeFoam  = smoothstep(0.86, 0.93, radialT)
+					                * smoothstep(0.98, 0.92, radialT)
+					                * (sin(baseAngle2 * 4.0) * 0.3 + 0.7)  // 角度调制，非完整圆
+					                * active * fade2 * 0.2;
+
+					coverage += crestFoam + innerTurb + edgeFoam;
 				}
 				normal = normalize(normal);
 
