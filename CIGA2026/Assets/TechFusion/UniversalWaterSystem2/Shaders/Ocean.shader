@@ -143,11 +143,26 @@ Shader "TechFusion/UniversalWaterSystem/Ocean"
 
 					float distToFront = proj - (waveFront - halfW * 0.5);
 					float gaussian    = exp(-pow(distToFront / halfW, 2.0));
-					float waveY       = waveH * gaussian;
-					float ahead       = saturate((waveFront - proj) / max(halfW, 0.001));
+
+					// ── 横向高度调制（长波，无尖刺）──────────────────────────
+					float2 perpDir  = float2(-dir2.y, dir2.x);
+					float  perpProj = dot(output.positionWS.xz, perpDir);
+					float  tTime    = _TsunamiAnim.w;
+
+					float lv = sin(perpProj * 0.008 + tTime * 0.12)        * 0.35
+					         + sin(perpProj * 0.014 - tTime * 0.08 + 1.7)  * 0.20
+					         + sin(perpProj * 0.023 + tTime * 0.05 + 3.5)  * 0.12;
+					float heightScale = 0.4 + (lv + 0.67) / 1.34;
+
+					float waveY = waveH * gaussian * heightScale;
+					float ahead = saturate((waveFront - proj) / max(halfW, 0.001));
 					waveY *= (1.0 - ahead * 0.7);
 
-					output.positionWS.y  += (withdrawY + waveY) * _TsunamiDir.w;
+					// 前导涌浪
+					float preSwellD = proj - (waveFront + halfW * 3.5);
+					float preSwell  = exp(-pow(preSwellD / (halfW * 6.0), 2.0)) * waveH * 0.28;
+
+					output.positionWS.y  += (withdrawY + waveY + preSwell) * _TsunamiDir.w;
 
 					float slope = -distToFront / (halfW * halfW) * 2.0 * gaussian;
 					output.positionWS.xz += dir2 * slope * waveH * 0.3 * _TsunamiDir.w;
@@ -249,22 +264,24 @@ Shader "TechFusion/UniversalWaterSystem/Ocean"
 				}
 				normal = normalize(normal);
 
-				// ── 海啸泡沫 ───────────────────────────────────────────────
+				// ── 海啸法线 + 极少泡沫 ────────────────────────────────────
 				if (_TsunamiDir.w > 0.001)
 				{
 					float2 dir2      = normalize(_TsunamiDir.xy);
 					float  proj      = dot(input.positionWS.xz, dir2);
 					float  waveFront = _TsunamiParams.x;
 					float  halfW     = max(_TsunamiParams.z * 0.5, 0.001);
+					float  intensity = _TsunamiDir.w;
 
-					float distToFront = proj - (waveFront - halfW * 0.5);
-					float gaussian    = exp(-pow(distToFront / halfW, 2.0));
+					float distToFront2 = proj - (waveFront - halfW * 0.5);
+					float gaussian2    = exp(-pow(distToFront2 / halfW, 2.0));
 
-					float crestFoam = smoothstep(0.4, 0.9, gaussian) * _TsunamiDir.w * 6.0;
-					float breakFoam = smoothstep(0.0, halfW * 0.3, distToFront)
-					                * smoothstep(halfW * 1.5, halfW * 0.6, distToFront)
-					                * _TsunamiDir.w * 4.0;
-					coverage += crestFoam + breakFoam;
+					normal.xz += dir2 * gaussian2 * intensity * 3.5;
+					normal = normalize(normal);
+
+					float sprayNoise  = sin(proj * 2.0 + _Time.y * 5.0) * 0.1 + 0.9;
+					float crestFoam   = smoothstep(0.88, 0.98, gaussian2) * intensity * 2.0 * sprayNoise;
+					coverage += crestFoam;
 				}
 
 				half4 foam = float4(GetFoamAlbedo(input.worldUV, coverage, waveFoam.x), 1);
@@ -273,6 +290,19 @@ Shader "TechFusion/UniversalWaterSystem/Ocean"
 								input.shadowCoord,
 								#endif
 								normal, viewDir, input.additionalData, foam, isUnderwater);
+
+				// 浪峰堆叠处再叠一层暗压（法线倾斜后 PBR 已经会压暗，这里额外加深）
+				if (_TsunamiDir.w > 0.001)
+				{
+					float2 dir2d      = normalize(_TsunamiDir.xy);
+					float  projd      = dot(input.positionWS.xz, dir2d);
+					float  waveFrontd = _TsunamiParams.x;
+					float  halfWd     = max(_TsunamiParams.z * 0.5, 0.001);
+					float  distd      = projd - (waveFrontd - halfWd * 0.5);
+					float  gaussiand  = exp(-pow(distd / halfWd, 2.0));
+					float  darken     = gaussiand * _TsunamiDir.w * 0.55;
+					oceanColor.rgb *= (1.0 - darken);
+				}
 
 				// Fog
 				float viewZ = input.viewDepth;
