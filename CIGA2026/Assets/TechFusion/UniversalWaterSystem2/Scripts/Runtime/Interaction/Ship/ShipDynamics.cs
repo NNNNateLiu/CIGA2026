@@ -85,7 +85,7 @@ namespace UniversalWaterSystem
             //Debug.Log("stable angle = " + angle.ToString());
             rigidbodyComponent.AddRelativeTorque(0, 0, -1000 * angle);
             
-            //gameObject.GetComponent<BoatForceDebugger>().BoatForce = rigidbodyComponent.velocity;
+            gameObject.GetComponent<BoatForceDebugger>().LogRelativeForce(rigidbodyComponent.velocity);
         }
     }
 }
