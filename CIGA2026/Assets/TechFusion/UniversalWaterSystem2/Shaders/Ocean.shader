@@ -59,9 +59,10 @@ Shader "TechFusion/UniversalWaterSystem/Ocean"
 			#include "Foam.hlsl"
 			#include "Surface.hlsl"
 
-			// ── 漩涡参数（由 WaterVortex.cs 每帧写入）────────────────────
-			float4 _VortexParams;  // xy=中心XZ, z=outerRadius, w=innerRadius
-			float4 _VortexAnim;   // x=深度(m), y=旋转角(rad), z=方向(1/-1), w=激活(0/1)
+			// ── 漩涡参数（最多4个，由 WaterVortex.cs 统一写入）──────────
+			float4 _VortexParamsArr[4]; // xy=中心XZ, z=outerRadius, w=innerRadius
+			float4 _VortexAnimArr[4];  // x=深度(m), y=旋转角(rad), z=方向(1/-1), w=激活
+			int    _VortexCount;
 
 			// ── 海啸参数（由 Tsunami.cs 每帧写入）────────────────────────
 			float4 _TsunamiParams; // x=波前投影, y=浪高, z=波宽, w=阶段
@@ -100,37 +101,33 @@ Shader "TechFusion/UniversalWaterSystem/Ocean"
 				//Todo Dynamic displacement
 				output.positionWS += SampleWaveDisplacement(output.worldUV).xyz * 0.5;
 
-				// ── 漩涡顶点位移 ───────────────────────────────────────────
+				// ── 漩涡顶点位移（多实例循环）─────────────────────────────
+				for (int vi = 0; vi < _VortexCount; vi++)
 				{
-					float2 toV    = output.worldUV - _VortexParams.xy;
+					float4 vParams = _VortexParamsArr[vi];
+					float4 vAnim   = _VortexAnimArr[vi];
+					if (vAnim.w < 0.001) continue;
+
+					float2 toV    = output.worldUV - vParams.xy;
 					float  dist   = max(length(toV), 0.001);
-					float  outer  = max(_VortexParams.z, 0.001);
-					float  inner  = _VortexParams.w;
-					float  depth  = _VortexAnim.x;
-					float  active = _VortexAnim.w;
+					float  outer  = max(vParams.z, 0.001);
+					float  depth  = vAnim.x;
+					float  active = vAnim.w;
 
 					float radialT = saturate(dist / outer);
 					float fade    = smoothstep(1.05, 0.65, radialT);
-
-					// 漏斗
 					float funnelT = pow(max(1.0 - radialT, 0.0), 2.0);
 
-					// 螺旋波脊（单臂，均匀旋转）
-					float baseAngle  = atan2(toV.y, toV.x) + _VortexAnim.y * _VortexAnim.z;
+					float baseAngle  = atan2(toV.y, toV.x) + vAnim.y * vAnim.z;
 					float ridgeK     = 6.28318 * 4.0 / outer;
 					float ridgePhase = baseAngle - dist * ridgeK;
 					float ridgeWave  = sin(ridgePhase) * 0.5 + 0.5;
 					float ridgeEnv   = pow(max(1.0 - radialT, 0.0), 0.6) * fade;
-					float ridgeY     = ridgeWave * ridgeEnv * depth * 0.08;
 
-					float funnelY    = -funnelT * depth * fade;
+					output.positionWS.y  += (-funnelT * depth * fade + ridgeWave * ridgeEnv * depth * 0.08) * active;
 
-					output.positionWS.y += (funnelY + ridgeY) * active;
-
-					// 切向推挤
-					float innerMult  = lerp(3.5, 1.0, radialT);
-					float2 radial2   = toV / dist;
-					float2 tangent2  = float2(-radial2.y, radial2.x) * _VortexAnim.z;
+					float2 radial2  = toV / dist;
+					float2 tangent2 = float2(-radial2.y, radial2.x) * vAnim.z;
 					output.positionWS.xz += tangent2 * funnelT * fade * depth * 0.45 * active;
 				}
 
@@ -194,38 +191,42 @@ Shader "TechFusion/UniversalWaterSystem/Ocean"
 				float2 waveFoam = SampleWaveFoam(input.worldUV);
 				//coverage += waveFoam.x;
 
-				// ── 漩涡法线 + 泡沫 ────────────────────────────────────────
+				// ── 漩涡法线 + 泡沫（多实例循环）────────────────────────────
+				for (int vi2 = 0; vi2 < _VortexCount; vi2++)
 				{
-					float2 toV    = input.positionWS.xz - _VortexParams.xy;
+					float4 vParams = _VortexParamsArr[vi2];
+					float4 vAnim   = _VortexAnimArr[vi2];
+					if (vAnim.w < 0.001) continue;
+
+					float2 toV    = input.positionWS.xz - vParams.xy;
 					float  dist   = max(length(toV), 0.001);
-					float  outer  = max(_VortexParams.z, 0.001);
-					float  depth  = _VortexAnim.x;
-					float  active = _VortexAnim.w;
+					float  outer  = max(vParams.z, 0.001);
+					float  depth  = vAnim.x;
+					float  active = vAnim.w;
 					float  radialT = saturate(dist / outer);
 					float  fade2   = smoothstep(1.05, 0.65, radialT);
 
-					float baseAngle2 = atan2(toV.y, toV.x) + _VortexAnim.y * _VortexAnim.z;
-					float ridgeK2    = 6.28318 * 4.0 / outer;
-					float ridgePhase = baseAngle2 - dist * ridgeK2;
-					float ridgeWave  = sin(ridgePhase);
+					float baseAngle2  = atan2(toV.y, toV.x) + vAnim.y * vAnim.z;
+					float ridgeK2     = 6.28318 * 4.0 / outer;
+					float ridgePhase  = baseAngle2 - dist * ridgeK2;
+					float ridgeWave   = sin(ridgePhase);
 					float ridgePhase2 = baseAngle2 * 1.7 - dist * ridgeK2 * 1.3;
 					float ridgeCombined = saturate((ridgeWave + sin(ridgePhase2) * 0.4) * 0.37 + 0.5);
 					float ridgeEnv = pow(max(1.0 - radialT, 0.0), 0.5) * fade2;
 
 					float2 radialDir  = toV / dist;
-					float2 tangentDir = float2(-radialDir.y, radialDir.x) * _VortexAnim.z;
+					float2 tangentDir = float2(-radialDir.y, radialDir.x) * vAnim.z;
 
 					float funnelSlope = 2.0 * (1.0 - radialT) * depth / outer;
-					normal.xz += radialDir * funnelSlope * active * fade2 * 0.4;
-					normal.xz += tangentDir * cos(ridgePhase) * ridgeEnv * 1.5 * active;
-					normal.xz += radialDir  * ridgeWave       * ridgeEnv * 0.8 * active;
-					normal = normalize(normal);
+					normal.xz += radialDir  * funnelSlope          * active * fade2 * 0.4;
+					normal.xz += tangentDir * cos(ridgePhase)      * ridgeEnv * 1.5 * active;
+					normal.xz += radialDir  * ridgeWave            * ridgeEnv * 0.8 * active;
 
-					float crestFoam = smoothstep(0.72, 0.90, ridgeCombined) * ridgeEnv * active * 0.7;
-					float edgeBreak = smoothstep(0.82, 0.90, radialT)
-					                * smoothstep(0.95, 0.88, radialT) * active * fade2 * 0.25;
-					coverage += crestFoam + edgeBreak;
+					coverage += smoothstep(0.72, 0.90, ridgeCombined) * ridgeEnv * active * 0.7;
+					coverage += smoothstep(0.82, 0.90, radialT)
+					          * smoothstep(0.95, 0.88, radialT) * active * fade2 * 0.25;
 				}
+				normal = normalize(normal);
 
 				// ── 海啸泡沫 ───────────────────────────────────────────────
 				if (_TsunamiDir.w > 0.001)

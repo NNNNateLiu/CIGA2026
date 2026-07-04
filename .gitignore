@@ -147,3 +147,5 @@ CIGA2026/.vscode/extensions.json
 CIGA2026/.vscode/launch.json
 CIGA2026/.vscode/settings.json
 CIGA2026/Assets/Nate/Editor.meta
+CIGA2026/.claude/settings.local.json
+*.json

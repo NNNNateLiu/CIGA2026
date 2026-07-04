@@ -1,25 +1,24 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace UniversalWaterSystem
 {
     /// <summary>
-    /// 水面大漩涡 —— 集成 TechFusion UniversalWaterSystem
-    ///
-    /// 工作原理：
-    ///   每帧向 Ocean.shader 写入漩涡参数（中心、半径、深度、旋转角），
-    ///   由顶点着色器用数学公式直接下压水面顶点，形成漏斗形凹陷。
-    ///   零贴图依赖，立即生效。
+    /// 水面大漩涡 —— 支持场景中同时存在多个（最多4个）
+    /// 所有实例共用一套 Shader 数组参数，由第一个实例统一推送
     /// </summary>
     public class WaterVortex : MonoBehaviour
     {
+        public const int MAX_VORTEX = 4;
+
         [Header("漩涡形状")]
-        [SerializeField] private float outerRadius = 40f;   // 影响半径
-        [SerializeField] private float innerRadius = 2f;    // 死区半径
-        [SerializeField] private float vortexDepth = 18f;   // 水面下压深度（越大漏斗越深）
+        [SerializeField] private float outerRadius = 40f;
+        [SerializeField] private float innerRadius = 2f;
+        [SerializeField] private float vortexDepth = 18f;
         [SerializeField] private bool  clockwise   = true;
 
         [Header("旋转")]
-        [SerializeField] private float rotateSpeed = 80f;   // 度/秒（越快螺旋感越强）
+        [SerializeField] private float rotateSpeed = 80f;
 
         [Header("物理力")]
         [SerializeField] private float pullForce    = 1200f;
@@ -33,24 +32,55 @@ namespace UniversalWaterSystem
         // ── 运行时 ────────────────────────────────────────────────────────────
         public bool IsActive { get; private set; } = true;
 
+        // 公开只读属性，供静态方法访问
+        public float OuterRadius => outerRadius;
+        public float InnerRadius => innerRadius;
+        public float VortexDepth => vortexDepth;
+        public bool  Clockwise   => clockwise;
+        public float RotAngle    => rotAngle;
+
         private float rotAngle;
 
-        static readonly int ID_VortexParams = Shader.PropertyToID("_VortexParams");
-        static readonly int ID_VortexAnim   = Shader.PropertyToID("_VortexAnim");
+        // ── 静态实例列表 ──────────────────────────────────────────────────────
+        private static readonly List<WaterVortex> s_all = new List<WaterVortex>();
+
+        // Shader 全局数组 ID
+        static readonly int ID_VortexParamsArr = Shader.PropertyToID("_VortexParamsArr");
+        static readonly int ID_VortexAnimArr   = Shader.PropertyToID("_VortexAnimArr");
+        static readonly int ID_VortexCount     = Shader.PropertyToID("_VortexCount");
+
+        // 复用数组，避免每帧 GC
+        static readonly Vector4[] s_paramsArr = new Vector4[MAX_VORTEX];
+        static readonly Vector4[] s_animArr   = new Vector4[MAX_VORTEX];
 
         // ── 生命周期 ──────────────────────────────────────────────────────────
         void Awake()
         {
-            // 立即写入，避免第一帧渲染时变量还是默认值 0
-            PushToShader();
+            if (!s_all.Contains(this))
+                s_all.Add(this);
+            PushAll();
+        }
+
+        void OnEnable()
+        {
+            if (!s_all.Contains(this))
+                s_all.Add(this);
         }
 
         void OnDisable()
         {
-            // 关闭时清除漩涡，让水面恢复正常
-            Shader.SetGlobalVector(ID_VortexAnim, Vector4.zero);
+            s_all.Remove(this);
+            // 清空该槽位
+            PushAll();
         }
 
+        void OnDestroy()
+        {
+            s_all.Remove(this);
+            PushAll();
+        }
+
+        // ── 更新 ──────────────────────────────────────────────────────────────
         void Update()
         {
             if (!IsActive) return;
@@ -59,29 +89,50 @@ namespace UniversalWaterSystem
 
         void LateUpdate()
         {
-            PushToShader();
+            // 只有列表中第一个实例负责推送所有数据（避免重复写入）
+            if (s_all.Count > 0 && s_all[0] == this)
+                PushAll();
         }
-
-        void PushToShader()
-        {
-            Shader.SetGlobalVector(ID_VortexParams, new Vector4(
-                transform.position.x,
-                transform.position.z,
-                outerRadius,
-                innerRadius));
-
-            Shader.SetGlobalVector(ID_VortexAnim, new Vector4(
-                IsActive ? vortexDepth : 0f,
-                rotAngle * Mathf.Deg2Rad,
-                clockwise ? 1f : -1f,
-                IsActive ? 1f : 0f));
-        }
-
 
         void FixedUpdate()
         {
             if (!IsActive) return;
             ApplyVortexForces();
+        }
+
+        // ── 统一推送所有实例到 Shader ─────────────────────────────────────────
+        static void PushAll()
+        {
+            int count = Mathf.Min(s_all.Count, MAX_VORTEX);
+
+            for (int i = 0; i < MAX_VORTEX; i++)
+            {
+                if (i < count)
+                {
+                    var v = s_all[i];
+                    s_paramsArr[i] = new Vector4(
+                        v.transform.position.x,
+                        v.transform.position.z,
+                        v.outerRadius,
+                        v.innerRadius);
+
+                    s_animArr[i] = new Vector4(
+                        v.IsActive ? v.vortexDepth : 0f,
+                        v.rotAngle * Mathf.Deg2Rad,
+                        v.clockwise ? 1f : -1f,
+                        v.IsActive ? 1f : 0f);
+                }
+                else
+                {
+                    // 空槽位：激活位清零
+                    s_paramsArr[i] = Vector4.zero;
+                    s_animArr[i]   = Vector4.zero;
+                }
+            }
+
+            Shader.SetGlobalVectorArray(ID_VortexParamsArr, s_paramsArr);
+            Shader.SetGlobalVectorArray(ID_VortexAnimArr,   s_animArr);
+            Shader.SetGlobalInt(ID_VortexCount, count);
         }
 
         // ── 物理力 ────────────────────────────────────────────────────────────
@@ -100,11 +151,7 @@ namespace UniversalWaterSystem
                 float dist = toCenter.magnitude;
                 if (dist < 0.1f) continue;
 
-                if (dist < innerRadius)
-                {
-                    OnSwallowed(rb);
-                    continue;
-                }
+                if (dist < innerRadius) { OnSwallowed(rb); continue; }
 
                 float falloff = 1f - Mathf.Clamp01(dist / outerRadius);
                 falloff *= falloff;
@@ -136,7 +183,7 @@ namespace UniversalWaterSystem
         public void SetIntensity(float t)
         {
             t           = Mathf.Clamp01(t);
-            vortexDepth = Mathf.Lerp(0f,    8f, t);
+            vortexDepth = Mathf.Lerp(0f,   18f, t);
             pullForce   = Mathf.Lerp(0f, 1200f, t);
             spinForce   = Mathf.Lerp(0f,  800f, t);
         }
@@ -144,10 +191,18 @@ namespace UniversalWaterSystem
         // ── Gizmos ────────────────────────────────────────────────────────────
         void OnDrawGizmosSelected()
         {
-            Gizmos.color = new Color(0.1f, 0.6f, 1f, 0.3f);
+            // 显示实例编号
+            int idx = s_all.IndexOf(this);
+            string label = idx >= 0 ? $"Vortex [{idx}]" : "Vortex";
+
+            Gizmos.color = new Color(0.1f, 0.6f, 1f, 0.25f);
             DrawCircleXZ(transform.position, outerRadius, 48);
             Gizmos.color = new Color(1f, 0.15f, 0.1f, 0.7f);
             DrawCircleXZ(transform.position, innerRadius, 24);
+
+#if UNITY_EDITOR
+            UnityEditor.Handles.Label(transform.position + Vector3.up * 2f, label);
+#endif
         }
 
         void DrawCircleXZ(Vector3 c, float r, int segs)
