@@ -29,12 +29,12 @@ namespace UniversalWaterSystem
 
             if (_joystick)
             {
-                SetBoatImpetus(_joystick.GetComponent<MobileInputController>().Vertical, _joystick.GetComponent<MobileInputController>().Horizontal);
+                //SetBoatImpetus(_joystick.GetComponent<MobileInputController>().Vertical, _joystick.GetComponent<MobileInputController>().Horizontal);
                 RotRudder(_joystick.GetComponent<MobileInputController>().Horizontal);
             }
             else
             {
-                SetBoatImpetus(Input.GetAxisRaw("Vertical"), Input.GetAxisRaw("Horizontal"));
+                //SetBoatImpetus(Input.GetAxisRaw("Vertical"), Input.GetAxisRaw("Horizontal"));
                 RotRudder(Input.GetAxisRaw("Horizontal"));
             }
         }

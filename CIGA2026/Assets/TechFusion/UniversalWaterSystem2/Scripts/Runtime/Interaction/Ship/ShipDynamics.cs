@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UniversalWaterSystem;
 
 namespace UniversalWaterSystem
 {
@@ -8,6 +9,8 @@ namespace UniversalWaterSystem
         [SerializeField] private float inertiaFactor = 0.005f;
         [SerializeField] private float turningFactor = 2.0f;
         [SerializeField] private float backwardSpeedFactor = 0.3f;
+        
+        
 
         //public Transform motor;
 
@@ -25,6 +28,8 @@ namespace UniversalWaterSystem
             rigidbodyComponent = GetComponent<Rigidbody>();
 
             accelerationBreak = finalSpeed * backwardSpeedFactor;
+            
+            SetImpetus(1,0);
         }
 
         public void SetImpetus(float verticalImpetus, float horizontalImpetus)
@@ -79,6 +84,8 @@ namespace UniversalWaterSystem
             if (angle >= 180) angle = angle - 360;
             //Debug.Log("stable angle = " + angle.ToString());
             rigidbodyComponent.AddRelativeTorque(0, 0, -1000 * angle);
+            
+            //gameObject.GetComponent<BoatForceDebugger>().BoatForce = rigidbodyComponent.velocity;
         }
     }
 }

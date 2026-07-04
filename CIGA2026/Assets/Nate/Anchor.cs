@@ -7,9 +7,12 @@ namespace UniversalWaterSystem
         [Header("Settings")]
         [SerializeField] private float anchorDepth = 20f;   // Depth to the sea floor
         [SerializeField] private float chainLength = 25f;  // Max distance ship can move from anchor
-        [SerializeField] private KeyCode anchorKey = KeyCode.Space;
-        
+        [SerializeField] private KeyCode leftAnchorKey = KeyCode.A;
+        [SerializeField] private KeyCode rightAnchorKey = KeyCode.D;
+            
         [Header("References")]
+        [SerializeField] private Transform leftChainExitPoint;
+        [SerializeField] private Transform rightChainExitPoint;
         [SerializeField] private Transform chainExitPoint; // Transform at the ship's bow/side
         [SerializeField] private LineRenderer chainRenderer;
         
@@ -28,15 +31,24 @@ namespace UniversalWaterSystem
 
         private void Update()
         {
-            if (Input.GetKeyDown(anchorKey))
+            if (Input.GetKeyDown(leftAnchorKey))
             {
-                ToggleAnchor();
+                ToggleAnchor(-1);
             }
+            
+            if (Input.GetKeyDown(rightAnchorKey))
+            {
+                ToggleAnchor(1);
+            }
+            
 
             if (isAnchorDropped)
             {
                 UpdateChainVisuals();
             }
+            
+            //GetComponent<BoatForceDebugger>()
+            
         }
 
         private void SetupJoint()
@@ -60,10 +72,22 @@ namespace UniversalWaterSystem
             anchorJoint.autoConfigureConnectedAnchor = false;
         }
 
-        private void ToggleAnchor()
+        private void ToggleAnchor(int directionIndex)
         {
             isAnchorDropped = !isAnchorDropped;
 
+            switch (directionIndex)
+            {
+                case -1:
+                    chainExitPoint = leftChainExitPoint;
+                    break;
+                case 1:
+                    chainExitPoint = rightChainExitPoint;
+                    break;
+                default:
+                    break;
+            }
+            
             if (isAnchorDropped)
             {
                 // Set anchor point directly below the ship (or use a Raycast for real terrain)
@@ -77,6 +101,8 @@ namespace UniversalWaterSystem
                 anchorJoint.zMotion = ConfigurableJointMotion.Limited;
 
                 if (chainRenderer != null) chainRenderer.enabled = true;
+                
+                GetComponent<ShipDynamics>().SetImpetus(1,directionIndex);
             }
             else
             {
@@ -86,6 +112,8 @@ namespace UniversalWaterSystem
                 anchorJoint.zMotion = ConfigurableJointMotion.Free;
 
                 if (chainRenderer != null) chainRenderer.enabled = false;
+                
+                GetComponent<ShipDynamics>().SetImpetus(1,0);
             }
         }
 

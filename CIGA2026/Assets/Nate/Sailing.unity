@@ -1107,7 +1107,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8156402978966614997, guid: 32f2c68364f3ec44c8838a1cf504021d, type: 3}
       propertyPath: density
-      value: 250
+      value: 150
       objectReference: {fileID: 0}
     - target: {fileID: 8156402978966614997, guid: 32f2c68364f3ec44c8838a1cf504021d, type: 3}
       propertyPath: isConcave
@@ -1187,7 +1187,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9195897327273147849, guid: 32f2c68364f3ec44c8838a1cf504021d, type: 3}
       propertyPath: finalSpeed
-      value: 500
+      value: 250
       objectReference: {fileID: 0}
     - target: {fileID: 9195897327273147849, guid: 32f2c68364f3ec44c8838a1cf504021d, type: 3}
       propertyPath: inertiaFactor
@@ -1514,9 +1514,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   anchorDepth: 20
-  chainLength: 40
-  anchorKey: 32
-  chainExitPoint: {fileID: 2041047732}
+  chainLength: 20
+  leftAnchorKey: 97
+  rightAnchorKey: 100
+  leftChainExitPoint: {fileID: 2041047732}
+  rightChainExitPoint: {fileID: 1798119443}
+  chainExitPoint: {fileID: 0}
   chainRenderer: {fileID: 8801976823899407791}
 --- !u!4 &8801976823899407790 stripped
 Transform:
