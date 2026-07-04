@@ -26,7 +26,12 @@ namespace UniversalWaterSystem
 
         [Header("链条视觉")]
         [SerializeField] private LineRenderer chainRenderer;
+        [SerializeField] private GameObject anchorVisualPrefab; // 锚的可视化预制体
         [SerializeField] private int chainSegments = 16; // 贝塞尔曲线分段数
+
+        private GameObject instantiatedAnchor_Left; // 左侧实例化的锚
+        private GameObject instantiatedAnchor_Right; // 右侧实例化的锚
+        private Quaternion anchorInitialRotation; // 记录初始旋转
 
         [Header("出链点（船舷位置）")]
         [SerializeField] private Transform leftChainExitPoint;
@@ -58,6 +63,26 @@ namespace UniversalWaterSystem
             {
                 chainRenderer.positionCount = chainSegments;
                 chainRenderer.enabled       = false;
+            }
+
+            if (anchorVisualPrefab != null)
+            {
+                // 初始化左侧锚
+                if (leftChainExitPoint != null)
+                {
+                    instantiatedAnchor_Left = Instantiate(anchorVisualPrefab, leftChainExitPoint);
+                    instantiatedAnchor_Left.transform.localPosition = Vector3.zero;
+                    instantiatedAnchor_Left.transform.localRotation = Quaternion.identity;
+                    anchorInitialRotation = instantiatedAnchor_Left.transform.rotation;
+                }
+                
+                // 初始化右侧锚
+                if (rightChainExitPoint != null)
+                {
+                    instantiatedAnchor_Right = Instantiate(anchorVisualPrefab, rightChainExitPoint);
+                    instantiatedAnchor_Right.transform.localPosition = Vector3.zero;
+                    instantiatedAnchor_Right.transform.localRotation = Quaternion.identity;
+                }
             }
         }
 
@@ -112,6 +137,10 @@ namespace UniversalWaterSystem
             State     = AnchorState.Dropping;
 
             if (chainRenderer != null) chainRenderer.enabled = true;
+            
+            // 下锚时，将对应的锚模型从父级（挂架）分离，以便独立运动
+            GameObject activeAnchor = (activeExit == leftChainExitPoint) ? instantiatedAnchor_Left : instantiatedAnchor_Right;
+            if (activeAnchor != null) activeAnchor.transform.SetParent(null);
         }
 
         // ── 起锚 ──────────────────────────────────────────────────────────────
@@ -150,8 +179,17 @@ namespace UniversalWaterSystem
 
                     if (Vector3.Distance(anchorPos, target) < 0.3f)
                     {
-                        State = AnchorState.Idle; // This stops ApplyChainForce() completely
+                        State = AnchorState.Idle;
                         if (chainRenderer != null) chainRenderer.enabled = false;
+
+                        // 起锚完成，将锚模型重新挂载到出链点（挂架）并重置位置
+                        GameObject activeAnchor = (activeExit == leftChainExitPoint) ? instantiatedAnchor_Left : instantiatedAnchor_Right;
+                        if (activeAnchor != null)
+                        {
+                            activeAnchor.transform.SetParent(activeExit);
+                            activeAnchor.transform.localPosition = Vector3.zero;
+                            activeAnchor.transform.localRotation = Quaternion.identity;
+                        }
         
                         // Restore forward movement
                         if (shipDynamics != null) 
@@ -226,6 +264,23 @@ namespace UniversalWaterSystem
                           + 2f * (1 - t) * t     * mid
                           + t  * t                * end;
                 chainRenderer.SetPosition(i, p);
+            }
+
+            // 更新当前活动的锚模型位置和旋转
+            GameObject activeAnchor = (activeExit == leftChainExitPoint) ? instantiatedAnchor_Left : instantiatedAnchor_Right;
+            if (activeAnchor != null && State != AnchorState.Idle)
+            {
+                activeAnchor.transform.position = end;
+                
+                float tEnd = 1.0f;
+                float tStart = 0.95f;
+                Vector3 pStart = Mathf.Pow(1 - tStart, 2) * start + 2f * (1 - tStart) * tStart * mid + tStart * tStart * end;
+                Vector3 tangent = (end - pStart).normalized;
+                
+                if (tangent != Vector3.zero)
+                {
+                    activeAnchor.transform.rotation = Quaternion.LookRotation(tangent) * anchorInitialRotation;
+                }
             }
         }
 
