@@ -42,7 +42,10 @@ namespace UniversalWaterSystem
         [SerializeField] private KeyCode dropLeftKey  = KeyCode.Q;
         [SerializeField] private KeyCode dropRightKey = KeyCode.E;
         [SerializeField] private KeyCode raiseKey     = KeyCode.R;
-
+        
+        [Header("Misc")]
+        [SerializeField] private GameObject drivingVirtualCam;
+        
         // ── 状态 ─────────────────────────────────────────────────────────────
         public AnchorState State { get; private set; } = AnchorState.Idle;
 
@@ -84,6 +87,8 @@ namespace UniversalWaterSystem
                     instantiatedAnchor_Right.transform.localRotation = Quaternion.identity;
                 }
             }
+            
+            drivingVirtualCam.SetActive(true);
         }
 
         // ── 主循环 ────────────────────────────────────────────────────────────
