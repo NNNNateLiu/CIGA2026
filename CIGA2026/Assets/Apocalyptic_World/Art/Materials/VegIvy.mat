@@ -12,6 +12,7 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
+  - _ALPHATEST_ON
   - _EMISSION
   - _RECEIVE_SHADOWS_OFF
   - _SPECULAR_SETUP
@@ -93,7 +94,7 @@ Material:
     m_Ints: []
     m_Floats:
     - PixelSnap: 0
-    - _AlphaClip: 0
+    - _AlphaClip: 1
     - _AlphaToMask: 0
     - _Blend: 1
     - _BlendModePreserveSpecular: 1
