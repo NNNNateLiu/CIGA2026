@@ -6,6 +6,7 @@ namespace RescueSystem
 {
     /// <summary>
     /// Manages the rescue of animals when they collide with the boat.
+    /// Tracks total rescued count and handles delivery at the Safety Area.
     /// </summary>
     public class BoatRescueManager : MonoBehaviour
     {
@@ -21,106 +22,133 @@ namespace RescueSystem
         [Header("Floating Settings")]
         [SerializeField] private GameObject floatingAnimalPrefab;
 
+        // --- State ---
         private HashSet<Transform> occupiedPositions = new HashSet<Transform>();
+
+        /// <summary>Total animals successfully delivered to a Safety Area.</summary>
+        public int TotalRescued { get; private set; }
+
+        // --- Rescue Detection ---
 
         private void OnCollisionEnter(Collision collision)
         {
-            // Check if the collided object is a rescueable animal
-            RescueableAnimal animal = collision.gameObject.GetComponent<RescueableAnimal>();
-            
-            if (animal == null)
-            {
-                // Also check children in case the collider is on a child object
-                animal = collision.gameObject.GetComponentInParent<RescueableAnimal>();
-            }
+            RescueableAnimal animal = collision.gameObject.GetComponent<RescueableAnimal>()
+                ?? collision.gameObject.GetComponentInParent<RescueableAnimal>();
 
             if (animal != null)
-            {
                 RescueAnimal(animal);
-            }
         }
+
+        // --- Rescue Sequence ---
 
         private void RescueAnimal(RescueableAnimal animal)
         {
             Transform availableSpot = GetRandomUnoccupiedPosition();
 
-            if (availableSpot != null)
+            if (availableSpot == null)
             {
-                Transform model = animal.AnimalModel;
-                
-                if (model != null)
+                Debug.LogWarning("[BoatRescueManager] No unoccupied rescue positions available on the boat!");
+                return;
+            }
+
+            Transform model = animal.AnimalModel;
+
+            if (model != null)
+            {
+                // Snap model to boat spot
+                model.SetParent(availableSpot);
+                model.localPosition = Vector3.zero;
+                model.localRotation = Quaternion.identity;
+                model.gameObject.SetActive(true);
+
+                // Add/Configure box collider physics
+                Rigidbody rb = model.gameObject.GetComponent<Rigidbody>();
+                if (rb == null) rb = model.gameObject.AddComponent<Rigidbody>();
+                rb.mass = animalMass;
+                rb.interpolation = RigidbodyInterpolation.Interpolate;
+                rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+
+                BoxCollider col = model.gameObject.GetComponent<BoxCollider>();
+                if (col == null) col = model.gameObject.AddComponent<BoxCollider>();
+                col.size = animalColliderSize;
+                col.center = animalColliderCenter;
+
+                // Water-return monitor
+                RescuedAnimal rescued = model.gameObject.GetComponent<RescuedAnimal>();
+                if (rescued == null) rescued = model.gameObject.AddComponent<RescuedAnimal>();
+                rescued.Initialize(this, availableSpot, floatingAnimalPrefab);
+
+                // Animation trigger
+                Animator animator = model.GetComponent<Animator>()
+                    ?? model.GetComponentInChildren<Animator>();
+                animator?.SetTrigger("rescued");
+
+                occupiedPositions.Add(availableSpot);
+
+                Debug.Log($"[BoatRescueManager] {model.name} rescued and placed at {availableSpot.name}.");
+            }
+
+            Destroy(animal.gameObject);
+        }
+
+        // --- Safety Area Delivery ---
+
+        /// <summary>
+        /// Called by SafetyArea when the boat enters the trigger.
+        /// Removes all rescued animals from every Spot and increments the counter.
+        /// </summary>
+        public void DeliverAnimals()
+        {
+            int delivered = 0;
+
+            foreach (Transform spot in rescuePositions)
+            {
+                if (spot == null) continue;
+
+                // Collect children of the spot (the rescued animal models)
+                List<Transform> children = new List<Transform>();
+                foreach (Transform child in spot)
+                    children.Add(child);
+
+                foreach (Transform child in children)
                 {
-                    // Teleport the model to the boat spot
-                    model.SetParent(availableSpot);
-                    model.localPosition = Vector3.zero;
-                    model.localRotation = Quaternion.identity;
-                    
-                    // Activate model if it was hidden
-                    model.gameObject.SetActive(true);
+                    // Remove RescuedAnimal first so it won't spawn a Floating Animal on destroy
+                    RescuedAnimal rescuedComp = child.GetComponent<RescuedAnimal>();
+                    if (rescuedComp != null)
+                        Destroy(rescuedComp);
 
-                    // Add/Configure Physics
-                    Rigidbody rb = model.gameObject.GetComponent<Rigidbody>();
-                    if (rb == null) rb = model.gameObject.AddComponent<Rigidbody>();
-                    rb.mass = animalMass;
-                    rb.interpolation = RigidbodyInterpolation.Interpolate;
-                    rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
-
-                    BoxCollider col = model.gameObject.GetComponent<BoxCollider>();
-                    if (col == null) col = model.gameObject.AddComponent<BoxCollider>();
-                    col.size = animalColliderSize;
-                    col.center = animalColliderCenter;
-
-                    // Add RescuedAnimal component to handle falling back
-                    RescuedAnimal rescued = model.gameObject.GetComponent<RescuedAnimal>();
-                    if (rescued == null) rescued = model.gameObject.AddComponent<RescuedAnimal>();
-                    rescued.Initialize(this, availableSpot, floatingAnimalPrefab);
-
-                    // Trigger the rescued animation if an Animator exists
-                    Animator animator = model.GetComponent<Animator>();
-                    if (animator == null)
-                    {
-                        animator = model.GetComponentInChildren<Animator>();
-                    }
-
-                    if (animator != null)
-                    {
-                        animator.SetTrigger("rescued");
-                    }
-                    
-                    // Mark position as occupied
-                    occupiedPositions.Add(availableSpot);
-                    
-                    Debug.Log($"Animal {model.name} rescued, physics enabled, and placed at {availableSpot.name}.");
+                    Destroy(child.gameObject);
+                    delivered++;
                 }
 
-                // Destroy the original floating animal container
-                Destroy(animal.gameObject);
+                occupiedPositions.Remove(spot);
             }
-            else
+
+            if (delivered > 0)
             {
-                Debug.LogWarning("No unoccupied rescue positions available on the boat!");
+                TotalRescued += delivered;
+                Debug.Log($"[BoatRescueManager] Delivered {delivered} animal(s) to safety. Total rescued so far: {TotalRescued}.");
             }
         }
+
+        // --- Position Management ---
 
         private Transform GetRandomUnoccupiedPosition()
         {
-            var unoccupied = rescuePositions.Where(p => !occupiedPositions.Contains(p)).ToList();
-            
-            if (unoccupied.Count == 0) return null;
+            List<Transform> unoccupied = rescuePositions
+                .Where(p => p != null && !occupiedPositions.Contains(p))
+                .ToList();
 
-            int randomIndex = Random.Range(0, unoccupied.Count);
-            return unoccupied[randomIndex];
+            if (unoccupied.Count == 0) return null;
+            return unoccupied[Random.Range(0, unoccupied.Count)];
         }
 
         /// <summary>
-        /// Clears an occupied position (e.g., if an animal is removed from the boat).
+        /// Frees a rescue spot (called by RescuedAnimal when the animal falls back into water).
         /// </summary>
         public void ClearPosition(Transform position)
         {
-            if (occupiedPositions.Contains(position))
-            {
-                occupiedPositions.Remove(position);
-            }
+            occupiedPositions.Remove(position);
         }
     }
 }
