@@ -118,6 +118,7 @@ namespace UniversalWaterSystem
             if (dest == null) return;
 
             dest.CopyFrom(src);
+            dest.rect = new Rect(0, 0, 1, 1); // 防止复制到非标准 viewport 导致 frustum 越界
             dest.useOcclusionCulling = false;
             if (dest.gameObject.TryGetComponent(out UniversalAdditionalCameraData camData))
             {

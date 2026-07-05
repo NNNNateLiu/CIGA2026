@@ -27,10 +27,12 @@ namespace UniversalWaterSystem
 
         [Header("游戏逻辑")]
         [SerializeField] private LayerMask affectedLayers = ~0;
-        [SerializeField] private string    shipTag        = "Player";
 
         // ── 运行时 ────────────────────────────────────────────────────────────
         public bool IsActive { get; private set; } = true;
+
+        /// <summary>玩家到达漩涡底部时触发</summary>
+        public static event System.Action OnPlayerReachedBottom;
 
         // 公开只读属性，供静态方法访问
         public float OuterRadius => outerRadius;
@@ -40,6 +42,13 @@ namespace UniversalWaterSystem
         public float RotAngle    => rotAngle;
 
         private float rotAngle;
+
+        // 原始配置值，供 SetIntensity 插值使用
+        private float _baseOuterRadius;
+        private float _baseInnerRadius;
+        private float _baseVortexDepth;
+        private float _basePullForce;
+        private float _baseSpinForce;
 
         // ── 静态实例列表 ──────────────────────────────────────────────────────
         private static readonly List<WaterVortex> s_all = new List<WaterVortex>();
@@ -56,6 +65,12 @@ namespace UniversalWaterSystem
         // ── 生命周期 ──────────────────────────────────────────────────────────
         void Awake()
         {
+            _baseOuterRadius = outerRadius;
+            _baseInnerRadius = innerRadius;
+            _baseVortexDepth = vortexDepth;
+            _basePullForce   = pullForce;
+            _baseSpinForce   = spinForce;
+
             if (!s_all.Contains(this))
                 s_all.Add(this);
             PushAll();
@@ -171,8 +186,18 @@ namespace UniversalWaterSystem
         {
             Vector3 dir = (transform.position - rb.position).normalized;
             rb.AddForce(pullForce * 3f * (dir + Vector3.down * 2f), ForceMode.Force);
-            if (rb.CompareTag(shipTag))
-                Debug.Log("[WaterVortex] 玩家被漩涡吞噬！");
+
+            if (rb.GetComponent<ShipDynamics>() == null) return;
+
+            float bottomY = transform.position.y - vortexDepth;
+            Debug.Log($"[Vortex] Ship swallowed | pos.y={rb.position.y:F1} | bottomY={bottomY:F1}");
+
+            if (rb.position.y <= bottomY)
+            {
+                Debug.Log("[Vortex] Bottom reached → firing OnPlayerReachedBottom");
+                OnPlayerReachedBottom?.Invoke();
+                if (GameManager.Instance != null) GameManager.Instance.ShowDiePanel();
+            }
         }
 
         // ── 公开接口 ──────────────────────────────────────────────────────────
@@ -183,9 +208,11 @@ namespace UniversalWaterSystem
         public void SetIntensity(float t)
         {
             t           = Mathf.Clamp01(t);
-            vortexDepth = Mathf.Lerp(0f,    100f, t);
-            pullForce   = Mathf.Lerp(0f,  12000f, t);
-            spinForce   = Mathf.Lerp(0f,   8000f, t);
+            outerRadius = Mathf.Lerp(0f, _baseOuterRadius, t);
+            innerRadius = Mathf.Lerp(0f, _baseInnerRadius, t);
+            vortexDepth = Mathf.Lerp(0f, _baseVortexDepth, t);
+            pullForce   = Mathf.Lerp(0f, _basePullForce,   t);
+            spinForce   = Mathf.Lerp(0f, _baseSpinForce,   t);
         }
 
         // ── Gizmos ────────────────────────────────────────────────────────────

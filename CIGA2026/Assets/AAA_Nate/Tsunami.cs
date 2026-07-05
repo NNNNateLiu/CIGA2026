@@ -48,6 +48,15 @@ namespace UniversalWaterSystem
         /// <summary>当前整体强度 0-1，可在编辑器实时查看</summary>
         public float Intensity { get; private set; }
 
+        /// <summary>巨浪冲击阶段结束时触发</summary>
+        public static event System.Action OnImpactComplete;
+
+        /// <summary>浪到达最高点时触发（travelDistance == originDistance）</summary>
+        public static event System.Action OnWavePeak;
+
+        /// <summary>浪首次击中玩家时触发</summary>
+        public static event System.Action OnPlayerHit;
+
         // 内部驱动变量（LateUpdate 读这些，协程只负责更新）
         private float waveFrontProj;    // 波前在传播轴上的世界投影
         private float currentHeight;    // 当前浪高
@@ -62,6 +71,7 @@ namespace UniversalWaterSystem
         private float   totalDistance;
 
         private Coroutine tsunamiCoroutine;
+        private bool      playerHitFired;
 
         // ── 公开接口 ──────────────────────────────────────────────────────────
         public void TriggerTsunami()
@@ -73,6 +83,24 @@ namespace UniversalWaterSystem
             }
             if (tsunamiCoroutine != null) StopCoroutine(tsunamiCoroutine);
             tsunamiCoroutine = StartCoroutine(RunTsunami());
+        }
+
+        /// <summary>
+        /// 从船正前方触发海啸，浪从前方打来冲向船
+        /// shipPosition: 船的世界坐标
+        /// shipForward:  船头朝向（世界空间）
+        /// </summary>
+        public void TriggerTsunamiAheadOf(Vector3 shipPosition, Vector3 shipForward)
+        {
+            shipForward.y = 0f;
+            if (shipForward == Vector3.zero) shipForward = Vector3.forward;
+            shipForward.Normalize();
+
+            // transform 放到船的位置作为浪的到达点
+            // 波从 shipPosition + shipForward * originDistance 出发，朝 -shipForward 方向行进
+            transform.position = shipPosition;
+            waveDirection = new Vector2(-shipForward.x, -shipForward.z);
+            TriggerTsunami();
         }
 
         public void StopTsunami()
@@ -138,10 +166,18 @@ namespace UniversalWaterSystem
 
             currentWithdraw = 0f;
             preTurbulence   = 1f;
+            bool peakFired  = false;
 
             while (travelDistance < totalDistance)
             {
                 travelDistance += waveSpeed * Time.deltaTime;
+
+                // 浪到达参考点（最高点）时触发一次
+                if (!peakFired && travelDistance >= originDistance)
+                {
+                    peakFired = true;
+                    OnWavePeak?.Invoke();
+                }
 
                 // 浪高：从 0 逐渐隆起（前 40% 路程内线性增长），越过目标后衰减
                 float buildupT = Mathf.SmoothStep(0f, 1f,
@@ -166,6 +202,7 @@ namespace UniversalWaterSystem
 
             // ── 阶段3：消退 ────────────────────────────────────────────────
             Phase = TsunamiPhase.Fade;
+            OnImpactComplete?.Invoke();
             Debug.Log("[Tsunami] 阶段3：浪潮消退");
 
             t = 0f;
@@ -243,8 +280,12 @@ namespace UniversalWaterSystem
                 rb.AddForce((waveDirWorld + Vector3.up * 0.5f) * impactForce * falloff * heightMult,
                             ForceMode.Force);
 
-                if (rb.CompareTag(playerTag))
+                if (!playerHitFired && rb.TryGetComponent<ShipDynamics>(out _))
+                {
+                    playerHitFired = true;
                     Debug.Log("[Tsunami] 玩家被海啸冲击！");
+                    OnPlayerHit?.Invoke();
+                }
             }
         }
 
