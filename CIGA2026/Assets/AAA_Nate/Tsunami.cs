@@ -57,6 +57,9 @@ namespace UniversalWaterSystem
         /// <summary>浪首次击中玩家时触发</summary>
         public static event System.Action OnPlayerHit;
 
+        /// <summary>海啸进入阶段2（巨浪冲击）时触发</summary>
+        public static event System.Action OnImpactStart;
+
         // 内部驱动变量（LateUpdate 读这些，协程只负责更新）
         private float waveFrontProj;    // 波前在传播轴上的世界投影
         private float currentHeight;    // 当前浪高
@@ -162,6 +165,7 @@ namespace UniversalWaterSystem
 
             // ── 阶段2：巨浪冲击 ────────────────────────────────────────────
             Phase = TsunamiPhase.Impact;
+            OnImpactStart?.Invoke();
             Debug.Log("[Tsunami] 阶段2：巨浪冲击！");
 
             currentWithdraw = 0f;

@@ -27,7 +27,8 @@ public class GameManager : MonoBehaviour
     private bool _vortexPassed    = false;
     private bool _vortexActivated = false;
 
-    private static readonly WaitForSeconds WaitPoint2 = new(0.2f);
+    private static readonly WaitForSeconds WaitPoint2  = new(0.5f);
+    private static readonly WaitForSeconds Wait3Sec    = new(3.3f);
 
     [Header("船")]
     [SerializeField] private ShipDynamics shipDynamics;
@@ -50,6 +51,14 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject floatingAnimal;
     [SerializeField] private float      animalForwardDistance = 300f;
     [SerializeField] private float      animalLeftDistance    = 300f;
+
+    [Header("Env 动物生成")]
+    [SerializeField] private int        envAnimalCount      = 20;
+    [SerializeField] private float      envSpawnRangeMin    = 50f;
+    [SerializeField] private float      envSpawnRangeMax    = 400f;
+    [SerializeField] private float      envSpawnWidth       = 300f;
+    [SerializeField] private float      envAvoidRadius      = 80f;
+    [SerializeField] private Vector3[]  envAvoidPoints;
 
     [Header("Tree")]
     [SerializeField] private GameObject treeObject;
@@ -78,14 +87,14 @@ public class GameManager : MonoBehaviour
     {
         WaterVortex.OnPlayerReachedBottom += OnPlayerFailed;
         BoatRescueManager.OnAnimalRescued += OnAnimalRescued;
-        Tsunami.OnPlayerHit               += OnTsunamiImpactComplete;
+        Tsunami.OnImpactStart             += OnTsunamiImpactComplete;
     }
 
     void OnDisable()
     {
         WaterVortex.OnPlayerReachedBottom -= OnPlayerFailed;
         BoatRescueManager.OnAnimalRescued -= OnAnimalRescued;
-        Tsunami.OnPlayerHit               -= OnTsunamiImpactComplete;
+        Tsunami.OnImpactStart             -= OnTsunamiImpactComplete;
     }
 
     void OnPlayerFailed() => ShowDiePanel();
@@ -115,6 +124,12 @@ public class GameManager : MonoBehaviour
 
     void OnTsunamiImpactComplete()
     {
+        StartCoroutine(DelayedFadeAndSwitch());
+    }
+
+    System.Collections.IEnumerator DelayedFadeAndSwitch()
+    {
+        yield return Wait3Sec;
         StartCoroutine(FadeAndSwitch());
     }
 
@@ -126,13 +141,11 @@ public class GameManager : MonoBehaviour
         // 激活 Env
         if (envObject != null) envObject.SetActive(true);
 
-        // 延迟 0.2s 后重置船的 transform
+        // SpawnEnvAnimals();
+
+        // 延迟 0.2s 后持续 reset 船位置，直到在原点稳定超过 0.5s
         yield return WaitPoint2;
-        if (shipTransform != null)
-        {
-            //if (shipDynamics != null) shipDynamics.ClearForces();
-            shipTransform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
-        }
+        yield return StartCoroutine(ResetShipUntilStable());
 
         // 销毁引导阶段的物体
         if (vortex        != null) Destroy(vortex.gameObject);
@@ -149,6 +162,22 @@ public class GameManager : MonoBehaviour
 
         // 从黑淡入
         yield return StartCoroutine(Fade(1f, 0f));
+    }
+
+    System.Collections.IEnumerator ResetShipUntilStable()
+    {
+        if (shipTransform == null) yield break;
+
+        float elapsed = 0f;
+        while (elapsed < 1f)
+        {
+            if (shipDynamics != null) shipDynamics.ClearForces();
+            shipTransform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (shipDynamics != null) shipDynamics.SetImpetus(1f, 0f);
     }
 
     System.Collections.IEnumerator Fade(float from, float to)
@@ -344,4 +373,53 @@ public class GameManager : MonoBehaviour
 
         treeObject.transform.localScale = targetScale;
     }
+
+    // ── Env 动物生成 ──────────────────────────────────────────────────────────
+
+    /*
+    void SpawnEnvAnimals()
+    {
+        if (floatingAnimal == null) return;
+
+        int spawned  = 0;
+        int attempts = 0;
+        int maxAttempts = envAnimalCount * 20;
+
+        while (spawned < envAnimalCount && attempts < maxAttempts)
+        {
+            attempts++;
+
+            float forward = Random.Range(envSpawnRangeMin, envSpawnRangeMax);
+            float side    = Random.Range(-envSpawnWidth, envSpawnWidth);
+            Vector3 candidate = shipTransform != null
+                ? shipTransform.position + shipTransform.forward * forward + shipTransform.right * side
+                : new Vector3(side, 0f, forward);
+            candidate.y = 0f;
+
+            bool tooClose = false;
+            if (envAvoidPoints != null)
+            {
+                foreach (var pt in envAvoidPoints)
+                {
+                    if (Vector3.Distance(new Vector3(candidate.x, 0, candidate.z),
+                                         new Vector3(pt.x,        0, pt.z)) < envAvoidRadius)
+                    { tooClose = true; break; }
+                }
+            }
+            if (tooClose) continue;
+
+            GameObject instance = Instantiate(floatingAnimal, candidate,
+                                              Quaternion.Euler(0f, Random.Range(0f, 360f), 0f));
+            int childCount = instance.transform.childCount;
+            if (childCount > 0)
+            {
+                int chosen = Random.Range(0, childCount);
+                for (int i = 0; i < childCount; i++)
+                    instance.transform.GetChild(i).gameObject.SetActive(i == chosen);
+            }
+
+            spawned++;
+        }
+    }
+    */
 }
