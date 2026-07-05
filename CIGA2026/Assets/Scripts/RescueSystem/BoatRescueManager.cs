@@ -13,6 +13,14 @@ namespace RescueSystem
         [Tooltip("List of transforms on the boat where animals will be teleported.")]
         [SerializeField] private List<Transform> rescuePositions = new List<Transform>();
 
+        [Header("Physics Settings")]
+        [SerializeField] private float animalMass = 50f;
+        [SerializeField] private Vector3 animalColliderSize = new Vector3(2f, 2f, 2f);
+        [SerializeField] private Vector3 animalColliderCenter = new Vector3(0f, 1f, 0f);
+
+        [Header("Floating Settings")]
+        [SerializeField] private GameObject floatingAnimalPrefab;
+
         private HashSet<Transform> occupiedPositions = new HashSet<Transform>();
 
         private void OnCollisionEnter(Collision collision)
@@ -50,6 +58,23 @@ namespace RescueSystem
                     // Activate model if it was hidden
                     model.gameObject.SetActive(true);
 
+                    // Add/Configure Physics
+                    Rigidbody rb = model.gameObject.GetComponent<Rigidbody>();
+                    if (rb == null) rb = model.gameObject.AddComponent<Rigidbody>();
+                    rb.mass = animalMass;
+                    rb.interpolation = RigidbodyInterpolation.Interpolate;
+                    rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+
+                    BoxCollider col = model.gameObject.GetComponent<BoxCollider>();
+                    if (col == null) col = model.gameObject.AddComponent<BoxCollider>();
+                    col.size = animalColliderSize;
+                    col.center = animalColliderCenter;
+
+                    // Add RescuedAnimal component to handle falling back
+                    RescuedAnimal rescued = model.gameObject.GetComponent<RescuedAnimal>();
+                    if (rescued == null) rescued = model.gameObject.AddComponent<RescuedAnimal>();
+                    rescued.Initialize(this, availableSpot, floatingAnimalPrefab);
+
                     // Trigger the rescued animation if an Animator exists
                     Animator animator = model.GetComponent<Animator>();
                     if (animator == null)
@@ -65,7 +90,7 @@ namespace RescueSystem
                     // Mark position as occupied
                     occupiedPositions.Add(availableSpot);
                     
-                    Debug.Log($"Animal rescued, placed at {availableSpot.name}, and animation triggered.");
+                    Debug.Log($"Animal {model.name} rescued, physics enabled, and placed at {availableSpot.name}.");
                 }
 
                 // Destroy the original floating animal container
