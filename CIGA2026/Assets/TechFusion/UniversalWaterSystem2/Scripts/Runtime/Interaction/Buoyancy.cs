@@ -18,7 +18,7 @@ namespace UniversalWaterSystem
         public bool isConcave = false;
         public int voxelsLimit = 16;
 
-        private const float DAMPFER = 0.02f;
+        [SerializeField] private float damping = 0.05f;
         private const float WATER_DENSITY = 1000;
 
         private float voxelHalfHeight;
@@ -272,7 +272,7 @@ namespace UniversalWaterSystem
                     }
 
                     var velocity = GetComponent<Rigidbody>().GetPointVelocity(wp);
-                    var localDampingForce = -velocity * DAMPFER * GetComponent<Rigidbody>().mass;
+                    var localDampingForce = -velocity * damping * GetComponent<Rigidbody>().mass;
                     var force = localDampingForce + Mathf.Sqrt(k) * localArchimedesForce;
                     GetComponent<Rigidbody>().AddForceAtPosition(force, wp);
 

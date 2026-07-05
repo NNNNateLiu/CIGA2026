@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UniversalWaterSystem;
 
 namespace UniversalWaterSystem
@@ -10,9 +10,9 @@ namespace UniversalWaterSystem
         [SerializeField] private float turningFactor = 2.0f;
         [SerializeField] private float backwardSpeedFactor = 0.3f;
         
-        
-
-        //public Transform motor;
+        [Header("Teleport Settings")]
+        [SerializeField] private Transform startTransform;
+        [SerializeField] private KeyCode teleportKey = KeyCode.T;
 
         private float verticalImpetus = 0f;
         private float horizontalImpetus = 0f;
@@ -30,6 +30,37 @@ namespace UniversalWaterSystem
             accelerationBreak = finalSpeed * backwardSpeedFactor;
             
             SetImpetus(1,0);
+        }
+
+        void Update()
+        {
+            if (Input.GetKeyDown(teleportKey))
+            {
+                TeleportToStart();
+            }
+        }
+
+        private void TeleportToStart()
+        {
+            if (startTransform == null)
+            {
+                Debug.LogWarning("Start Transform is not assigned in ShipDynamics!");
+                return;
+            }
+
+            // Reset position and rotation
+            transform.position = startTransform.position;
+            transform.rotation = startTransform.rotation;
+
+            // Clear physics momentum
+            if (rigidbodyComponent != null)
+            {
+                rigidbodyComponent.velocity = Vector3.zero;
+                rigidbodyComponent.angularVelocity = Vector3.zero;
+            }
+            
+            // Reset internal motor state
+            acceleration = 0f;
         }
 
         public void SetImpetus(float verticalImpetus, float horizontalImpetus)
@@ -85,7 +116,10 @@ namespace UniversalWaterSystem
             //Debug.Log("stable angle = " + angle.ToString());
             rigidbodyComponent.AddRelativeTorque(0, 0, -1000 * angle);
             
-            gameObject.GetComponent<BoatForceDebugger>().LogRelativeForce(rigidbodyComponent.velocity);
+            if (TryGetComponent<BoatForceDebugger>(out var debugger))
+            {
+                debugger.LogRelativeForce(rigidbodyComponent.velocity);
+            }
         }
     }
 }
