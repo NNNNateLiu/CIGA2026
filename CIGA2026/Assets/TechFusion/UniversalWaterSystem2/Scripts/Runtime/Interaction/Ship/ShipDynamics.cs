@@ -1,5 +1,6 @@
 using UnityEngine;
 using UniversalWaterSystem;
+using RescueSystem;
 
 namespace UniversalWaterSystem
 {
@@ -13,6 +14,7 @@ namespace UniversalWaterSystem
         [Header("Teleport Settings")]
         [SerializeField] private Transform startTransform;
         [SerializeField] private KeyCode teleportKey = KeyCode.T;
+        [SerializeField] private Transform rescuePositionsRoot;
 
         private float verticalImpetus = 0f;
         private float horizontalImpetus = 0f;
@@ -30,6 +32,11 @@ namespace UniversalWaterSystem
             accelerationBreak = finalSpeed * backwardSpeedFactor;
             
             SetImpetus(1,0);
+
+            if (rescuePositionsRoot == null)
+            {
+                rescuePositionsRoot = transform.Find("RescuePositions");
+            }
         }
 
         void Update()
@@ -48,6 +55,9 @@ namespace UniversalWaterSystem
                 return;
             }
 
+            // Return animals to water before teleporting the boat
+            ReturnAnimalsToWater();
+
             // Reset position and rotation
             transform.position = startTransform.position;
             transform.rotation = startTransform.rotation;
@@ -61,6 +71,36 @@ namespace UniversalWaterSystem
             
             // Reset internal motor state
             acceleration = 0f;
+        }
+
+        private void ReturnAnimalsToWater()
+        {
+            if (rescuePositionsRoot == null) return;
+
+            // Iterate through each spot (Spot1, Spot2, etc.)
+            foreach (Transform spot in rescuePositionsRoot)
+            {
+                // Each spot might have multiple animals, or we check for children
+                // According to prompt: "any child objects under Spot in rescue positions"
+                
+                // Copy children to a list to avoid modification issues during iteration
+                System.Collections.Generic.List<Transform> animals = new System.Collections.Generic.List<Transform>();
+                foreach (Transform child in spot)
+                {
+                    animals.Add(child);
+                }
+
+                foreach (Transform animal in animals)
+                {
+                    RescuedAnimal rescuedComp = animal.GetComponent<RescuedAnimal>();
+                    if (rescuedComp != null)
+                    {
+                        // Detach and return to water
+                        animal.SetParent(null);
+                        rescuedComp.ReturnToWater();
+                    }
+                }
+            }
         }
 
         public void SetImpetus(float verticalImpetus, float horizontalImpetus)

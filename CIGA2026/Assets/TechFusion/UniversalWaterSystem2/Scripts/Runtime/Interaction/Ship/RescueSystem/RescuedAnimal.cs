@@ -37,7 +37,7 @@ namespace RescueSystem
             }
         }
 
-        private void ReturnToWater()
+        public void ReturnToWater()
         {
             if (floatingPrefab != null)
             {

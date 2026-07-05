@@ -1869,7 +1869,7 @@ Transform:
   m_GameObject: {fileID: 665039014}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: -207.4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -5277,11 +5277,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: caa9b0eefc7abee4da211c49ff711c6b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxChainLength: 40
+  maxChainLength: 20
   seabedDepth: 15
-  chainTensionForce: 3000
+  chainTensionForce: 10000
   chainDamping: 2.4
-  anchorDragSteerStrength: 10
+  anchorDragSteerStrength: 20
   anchorBaseDragForce: 2000
   dropSpeed: 40
   raiseSpeed: 80
