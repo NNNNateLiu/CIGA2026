@@ -4,6 +4,8 @@ using RescueSystem;
 
 namespace UniversalWaterSystem
 {
+    [RequireComponent(typeof(Rigidbody))]
+    
     public class ShipDynamics : MonoBehaviour
     {
         [SerializeField] private float finalSpeed = 100f;
@@ -22,16 +24,54 @@ namespace UniversalWaterSystem
 
         private float acceleration = 0f;
         private float accelerationBreak;
+        
+        public bool IsFrozen { get; private set; } = false;
 
         public float FinalSpeed { set { finalSpeed = value; } get { return finalSpeed; } }
 
+        public void Freeze()
+        {
+            IsFrozen = true;
+            acceleration = 0f;
+            SetImpetus(0f, 0f);
+            if (rigidbodyComponent == null) rigidbodyComponent = GetComponent<Rigidbody>();
+            rigidbodyComponent.velocity        = Vector3.zero;
+            rigidbodyComponent.angularVelocity = Vector3.zero;
+            rigidbodyComponent.isKinematic     = true;
+        }
+
+        public void Unfreeze()
+        {
+            IsFrozen = false;
+            rigidbodyComponent.isKinematic = false;
+            SetImpetus(1f, 0f);
+        }
+
+        public void ClearForces()
+        {
+            acceleration = 0f;
+            SetImpetus(0f, 0f);
+            rigidbodyComponent.velocity        = Vector3.zero;
+            rigidbodyComponent.angularVelocity = Vector3.zero;
+        }
+        
+        void Awake()
+        {
+            rigidbodyComponent = GetComponent<Rigidbody>();
+            accelerationBreak  = finalSpeed * backwardSpeedFactor;
+        }
+        
         void Start()
         {
             rigidbodyComponent = GetComponent<Rigidbody>();
 
-            accelerationBreak = finalSpeed * backwardSpeedFactor;
+            //accelerationBreak = finalSpeed * backwardSpeedFactor;
             
-            SetImpetus(1,0);
+            //SetImpetus(1,0);
+            
+            // 若外部已在 Awake/Start 里调用 Freeze()，不覆盖冻结状态
+            if (!IsFrozen)
+                SetImpetus(1, 0);
 
             if (rescuePositionsRoot == null)
             {
@@ -116,13 +156,10 @@ namespace UniversalWaterSystem
 
         void FixedUpdate()
         {
+            if (IsFrozen) return;
             if (verticalImpetus > 0)
             {
-                if (acceleration < finalSpeed)
-                {
-                    acceleration += (finalSpeed * inertiaFactor);
-                    acceleration *= verticalImpetus;
-                }
+                acceleration = Mathf.MoveTowards(acceleration, finalSpeed * verticalImpetus, finalSpeed * inertiaFactor);
             }
             else if (verticalImpetus == 0)
             {

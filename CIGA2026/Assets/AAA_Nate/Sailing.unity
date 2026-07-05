@@ -2990,6 +2990,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: Floating Animal
       objectReference: {fileID: 0}
+    - target: {fileID: 5631614335928282833, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+      propertyPath: m_Mass
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6415802910372489788, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+      propertyPath: mass
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6415802910372489788, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
       propertyPath: colliderSize.x
       value: 1.5
@@ -3001,6 +3009,10 @@ PrefabInstance:
     - target: {fileID: 6415802910372489788, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
       propertyPath: colliderSize.z
       value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6931089587214452463, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+      propertyPath: m_IsTrigger
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -3188,6 +3200,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: Floating Animal (1)
       objectReference: {fileID: 0}
+    - target: {fileID: 5631614335928282833, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+      propertyPath: m_Mass
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6415802910372489788, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+      propertyPath: mass
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6415802910372489788, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
       propertyPath: animalModel
       value: 
@@ -3308,6 +3328,14 @@ PrefabInstance:
     - target: {fileID: 5035843339347042315, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
       propertyPath: m_Name
       value: Floating Animal (3)
+      objectReference: {fileID: 0}
+    - target: {fileID: 5631614335928282833, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+      propertyPath: m_Mass
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6415802910372489788, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+      propertyPath: mass
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6415802910372489788, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
       propertyPath: animalModel
@@ -4478,6 +4506,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: Floating Animal (2)
       objectReference: {fileID: 0}
+    - target: {fileID: 5631614335928282833, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+      propertyPath: m_Mass
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6415802910372489788, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+      propertyPath: mass
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6415802910372489788, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
       propertyPath: animalModel
       value: 
@@ -5381,7 +5417,7 @@ MonoBehaviour:
   slicesPerAxis: 4
   isConcave: 0
   voxelsLimit: 32
-  damping: 0.05
+  damping: 0.025
 --- !u!114 &8801976823899407784
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5394,7 +5430,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 81023bf66e7ce244a85d17b08c0a677b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  finalSpeed: 20000
+  finalSpeed: 30000
   inertiaFactor: 0.1
   turningFactor: 20000
   backwardSpeedFactor: 0.3
@@ -5413,13 +5449,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: caa9b0eefc7abee4da211c49ff711c6b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxChainLength: 20
+  maxChainLength: 25
   seabedDepth: 15
-  chainTensionForce: 10000
-  chainDamping: 2.4
-  anchorDragSteerStrength: 20
-  anchorBaseDragForce: 2000
-  dropSpeed: 40
+  chainTensionForce: 4000
+  chainDamping: 5
+  anchorDragSteerStrength: 2
+  anchorBaseDragForce: 5000
+  dropSpeed: 80
   raiseSpeed: 80
   chainRenderer: {fileID: 8801976823899407791}
   anchorVisualPrefab: {fileID: 6700238934861470287, guid: 570e65014faac3347af413c0cb91452a, type: 3}

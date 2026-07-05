@@ -10,6 +10,7 @@ namespace RescueSystem
     /// </summary>
     public class BoatRescueManager : MonoBehaviour
     {
+        public static event System.Action OnAnimalRescued;
         [Header("Rescue Positions")]
         [Tooltip("List of transforms on the boat where animals will be teleported.")]
         [SerializeField] private List<Transform> rescuePositions = new List<Transform>();
@@ -79,6 +80,8 @@ namespace RescueSystem
                 animator?.SetTrigger("rescued");
 
                 occupiedPositions.Add(availableSpot);
+                
+                OnAnimalRescued?.Invoke();
 
                 Debug.Log($"[BoatRescueManager] {model.name} rescued and placed at {availableSpot.name}.");
             }

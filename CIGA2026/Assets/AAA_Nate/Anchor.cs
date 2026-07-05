@@ -94,7 +94,7 @@ namespace UniversalWaterSystem
                 }
             }
             
-            drivingVirtualCam.SetActive(true);
+            drivingVirtualCam.SetActive(false);
         }
 
         // ── 主循环 ────────────────────────────────────────────────────────────
