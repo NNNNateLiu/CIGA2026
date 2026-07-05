@@ -485,8 +485,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 119080862}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.03300288, y: 0.9592297, z: -0.12628497, w: -0.2506817}
-  m_LocalPosition: {x: 4.085022, y: 40.36275, z: -26.497229}
+  m_LocalRotation: {x: 0.28539297, y: -0.002183041, z: 0.000650062, w: 0.95840794}
+  m_LocalPosition: {x: 0.5, y: 71.72638, z: -109.75551}
   m_LocalScale: {x: 0.033460345, y: 0.06302985, z: 0.018439818}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -593,7 +593,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 1
-  far clip plane: 1000
+  far clip plane: 5000
   field of view: 60.000004
   orthographic: 0
   orthographic size: 10
@@ -839,6 +839,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 141659f8661e6124982c462d38932239, type: 3}
+--- !u!4 &167136419 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3085384142380125420, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+  m_PrefabInstance: {fileID: 1692379659}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &171395631
 GameObject:
   m_ObjectHideFlags: 0
@@ -1901,6 +1906,62 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 47.515053, y: 53.527447, z: 24.29443}
   m_Center: {x: -3.1077232, y: -26.263723, z: 4.8912907}
+--- !u!1 &712745945
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 712745947}
+  - component: {fileID: 712745946}
+  m_Layer: 0
+  m_Name: WaterVortex
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &712745946
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 712745945}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc86df99662ed4946a46f3c0d0c66f05, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  outerRadius: 150
+  innerRadius: 70
+  vortexDepth: 100
+  clockwise: 1
+  rotateSpeed: 80
+  pullForce: 12000
+  spinForce: 8000
+  dragInVortex: 10
+  affectedLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  shipTag: Player
+--- !u!4 &712745947
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 712745945}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 26.5, y: 0, z: 786.7}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!43 &741650832
 Mesh:
   m_ObjectHideFlags: 0
@@ -2066,62 +2127,6 @@ Mesh:
     offset: 0
     size: 0
     path: 
---- !u!1 &862374589
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 862374591}
-  - component: {fileID: 862374590}
-  m_Layer: 0
-  m_Name: WaterVortex
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &862374590
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 862374589}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fc86df99662ed4946a46f3c0d0c66f05, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  outerRadius: 100
-  innerRadius: 50
-  vortexDepth: 20
-  clockwise: 1
-  rotateSpeed: 80
-  pullForce: 1200
-  spinForce: 800
-  dragInVortex: 2
-  affectedLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  shipTag: Player
---- !u!4 &862374591
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 862374589}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 42, y: 0, z: 938}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &901368440
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2985,6 +2990,18 @@ PrefabInstance:
       propertyPath: m_Name
       value: Floating Animal
       objectReference: {fileID: 0}
+    - target: {fileID: 6415802910372489788, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+      propertyPath: colliderSize.x
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6415802910372489788, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+      propertyPath: colliderSize.y
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6415802910372489788, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+      propertyPath: colliderSize.z
+      value: 1.5
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -3175,6 +3192,18 @@ PrefabInstance:
       propertyPath: animalModel
       value: 
       objectReference: {fileID: 1576175737}
+    - target: {fileID: 6415802910372489788, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+      propertyPath: colliderSize.x
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6415802910372489788, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+      propertyPath: colliderSize.y
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6415802910372489788, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+      propertyPath: colliderSize.z
+      value: 1.5
+      objectReference: {fileID: 0}
     - target: {fileID: 6654029226607417401, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
       propertyPath: m_LocalPosition.y
       value: -13.3
@@ -3268,9 +3297,37 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3382807420480825433, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5025775934349289540, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 5035843339347042315, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
       propertyPath: m_Name
       value: Floating Animal (3)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6415802910372489788, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+      propertyPath: animalModel
+      value: 
+      objectReference: {fileID: 167136419}
+    - target: {fileID: 6415802910372489788, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+      propertyPath: colliderSize.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6415802910372489788, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+      propertyPath: colliderSize.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6415802910372489788, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+      propertyPath: colliderSize.z
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6415802910372489788, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+      propertyPath: colliderCenter.y
+      value: 0.5
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -4425,6 +4482,18 @@ PrefabInstance:
       propertyPath: animalModel
       value: 
       objectReference: {fileID: 2015846259}
+    - target: {fileID: 6415802910372489788, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+      propertyPath: colliderSize.x
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6415802910372489788, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+      propertyPath: colliderSize.y
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6415802910372489788, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
+      propertyPath: colliderSize.z
+      value: 1.5
+      objectReference: {fileID: 0}
     - target: {fileID: 6654029226607417401, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
       propertyPath: m_LocalPosition.y
       value: -13.3
@@ -5531,9 +5600,6 @@ MonoBehaviour:
   - {fileID: 1703370751}
   - {fileID: 1065336989}
   - {fileID: 1352849678}
-  animalMass: 50
-  animalColliderSize: {x: 2, y: 2, z: 2}
-  animalColliderCenter: {x: 0, y: 1, z: 0}
   floatingAnimalPrefab: {fileID: 5035843339347042315, guid: 6a225b20f08a7e94b8064250ccf694fb, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
@@ -5552,7 +5618,6 @@ SceneRoots:
   - {fileID: 2022996011}
   - {fileID: 1699597352}
   - {fileID: 119080863}
-  - {fileID: 862374591}
   - {fileID: 66679663}
   - {fileID: 1371184114}
   - {fileID: 951566780}
@@ -5572,3 +5637,4 @@ SceneRoots:
   - {fileID: 2015846258}
   - {fileID: 665039015}
   - {fileID: 2086930349}
+  - {fileID: 712745947}

@@ -14,11 +14,6 @@ namespace RescueSystem
         [Tooltip("List of transforms on the boat where animals will be teleported.")]
         [SerializeField] private List<Transform> rescuePositions = new List<Transform>();
 
-        [Header("Physics Settings")]
-        [SerializeField] private float animalMass = 50f;
-        [SerializeField] private Vector3 animalColliderSize = new Vector3(2f, 2f, 2f);
-        [SerializeField] private Vector3 animalColliderCenter = new Vector3(0f, 1f, 0f);
-
         [Header("Floating Settings")]
         [SerializeField] private GameObject floatingAnimalPrefab;
 
@@ -61,17 +56,17 @@ namespace RescueSystem
                 model.localRotation = Quaternion.identity;
                 model.gameObject.SetActive(true);
 
-                // Add/Configure box collider physics
+                // Add/Configure box collider physics using per-animal settings
                 Rigidbody rb = model.gameObject.GetComponent<Rigidbody>();
                 if (rb == null) rb = model.gameObject.AddComponent<Rigidbody>();
-                rb.mass = animalMass;
+                rb.mass = animal.Mass;
                 rb.interpolation = RigidbodyInterpolation.Interpolate;
                 rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
 
                 BoxCollider col = model.gameObject.GetComponent<BoxCollider>();
                 if (col == null) col = model.gameObject.AddComponent<BoxCollider>();
-                col.size = animalColliderSize;
-                col.center = animalColliderCenter;
+                col.size = animal.ColliderSize;
+                col.center = animal.ColliderCenter;
 
                 // Water-return monitor
                 RescuedAnimal rescued = model.gameObject.GetComponent<RescuedAnimal>();
