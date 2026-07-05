@@ -144,7 +144,9 @@ namespace UniversalWaterSystem
             {
                 currentSeabedOffset = anchorSeabedOffect;
             }
-            seabedPos = new Vector3(anchorPos.x + currentSeabedOffset, seabedY, anchorPos.z);
+            // 使用船的变换方向来计算偏移，而不是简单的世界坐标偏移
+            seabedPos = anchorPos + transform.right * currentSeabedOffset;
+            seabedPos.y = seabedY;
 
             paidChain = 0f;
             State     = AnchorState.Dropping;
@@ -291,7 +293,10 @@ namespace UniversalWaterSystem
                 
                 if (tangent != Vector3.zero)
                 {
-                    activeAnchor.transform.rotation = Quaternion.LookRotation(tangent) * anchorInitialRotation;
+                    // 让锚的头部（模型 -Y 轴）朝向切线方向，
+                    // 这样在下锚时头部向下，拖行时头部朝向受力方向
+                    // Quaternion.FromToRotation(Vector3.down, tangent) 将模型的“下”对齐到切线
+                    activeAnchor.transform.rotation = Quaternion.FromToRotation(Vector3.down, tangent);
                 }
             }
         }
